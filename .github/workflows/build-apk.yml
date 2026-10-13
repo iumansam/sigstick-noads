@@ -1,0 +1,47 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Versiones
+        run: |
+          java -version
+          gradle --version
+      - name: Compilar APK (debug)
+        run: gradle :app:assembleDebug --stacktrace --no-daemon
+      - name: Comprobar APK
+        run: |
+          ls -lh app/build/outputs/apk/debug/
+          test -f app/build/outputs/apk/debug/app-debug.apk
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SigStickNoAds-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Subir reportes si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-gradle
+          path: |
+            app/build/reports/
+            app/build/outputs/logs/
+          if-no-files-found: ignore
+# FIN-SIGSTICK
